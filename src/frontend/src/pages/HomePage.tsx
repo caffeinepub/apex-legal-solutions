@@ -212,7 +212,7 @@ export default function HomePage({ onOpenConsultation }: Props) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-center">
               {[
-                { value: "15+", label: "Years Experience" },
+                { value: "20+", label: "Years Experience" },
                 { value: "12", label: "Practice Areas" },
                 { value: "100%", label: "Free Consultation" },
               ].map((stat) => (
