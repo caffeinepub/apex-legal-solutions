@@ -20,7 +20,8 @@ import { CheckCircle, Copy, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { CaseType, useSubmitConsultation } from "../hooks/useQueries";
+import { useActor } from "../hooks/useActor";
+import { CaseType } from "../hooks/useQueries";
 
 const CASE_TYPE_LABELS: Record<CaseType, string> = {
   [CaseType.civilLitigation]: "Civil Litigation",
@@ -47,23 +48,29 @@ export default function ConsultationModal({ open, onClose }: Props) {
     description: "",
   });
   const [requestId, setRequestId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const submit = useSubmitConsultation();
+  const { actor, isFetching: actorLoading } = useActor();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.caseType) return;
+    if (!form.caseType || !actor || isSubmitting) return;
+    setIsSubmitting(true);
     try {
-      const id = await submit.mutateAsync({
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        caseType: form.caseType as CaseType,
-        description: form.description,
-      });
-      setRequestId(id);
-    } catch {
-      toast.error("Failed to submit. Please try again.");
+      const id = await actor.submitConsultationRequest(
+        form.name,
+        form.email,
+        form.phone,
+        form.caseType as CaseType,
+        form.description,
+      );
+      const idStr = String(id);
+      setRequestId(idStr);
+    } catch (err) {
+      console.error("Consultation submit error:", err);
+      toast.error("Failed to submit request. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -78,6 +85,7 @@ export default function ConsultationModal({ open, onClose }: Props) {
         description: "",
       });
       setRequestId(null);
+      setIsSubmitting(false);
     }, 300);
   };
 
@@ -87,6 +95,8 @@ export default function ConsultationModal({ open, onClose }: Props) {
       toast.success("Request ID copied!");
     }
   };
+
+  const isReady = !!actor && !actorLoading;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
@@ -285,13 +295,18 @@ export default function ConsultationModal({ open, onClose }: Props) {
                 <Button
                   type="submit"
                   data-ocid="consultation.submit.button"
-                  disabled={submit.isPending || !form.caseType}
+                  disabled={isSubmitting || !form.caseType || !isReady}
                   className="flex-1 bg-gold text-primary-foreground hover:bg-gold-light font-medium"
                 >
-                  {submit.isPending ? (
+                  {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
                       Submitting...
+                    </>
+                  ) : !isReady ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Connecting...
                     </>
                   ) : (
                     "Submit Request"
@@ -299,7 +314,7 @@ export default function ConsultationModal({ open, onClose }: Props) {
                 </Button>
               </div>
 
-              {submit.isPending && (
+              {isSubmitting && (
                 <div
                   data-ocid="consultation.loading_state"
                   className="text-center text-xs text-muted-foreground"

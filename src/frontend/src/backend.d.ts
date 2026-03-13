@@ -43,6 +43,7 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
+    _initializeAccessControl(): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     checkRequestStatus(id: string): Promise<ConsultationStatus>;
     getAllRequests(): Promise<Array<ConsultationRequest>>;

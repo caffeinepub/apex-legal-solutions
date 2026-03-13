@@ -21,13 +21,14 @@ module {
     };
   };
 
-  // First principal that calls this function becomes admin, all other principals become users.
-  public func initialize(state : AccessControlState, caller : Principal, adminToken : Text, userProvidedToken : Text) {
+  // First non-anonymous principal that calls this function becomes admin automatically.
+  // No token required.
+  public func initialize(state : AccessControlState, caller : Principal) {
     if (caller.isAnonymous()) { return };
     switch (state.userRoles.get(caller)) {
       case (?_) {};
       case (null) {
-        if (not state.adminAssigned and userProvidedToken == adminToken) {
+        if (not state.adminAssigned) {
           state.userRoles.add(caller, #admin);
           state.adminAssigned := true;
         } else {

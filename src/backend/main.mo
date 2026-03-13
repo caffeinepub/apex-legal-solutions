@@ -110,18 +110,11 @@ actor {
     id;
   };
 
-  public query ({ caller }) func checkRequestStatus(id : Text) : async ConsultationStatus {
-    // Public users can check status of their own request
-    // Admins can check any request
+  // Anyone with a valid request ID can check its status
+  public query func checkRequestStatus(id : Text) : async ConsultationStatus {
     switch (requests.get(id)) {
       case (null) { Runtime.trap("Request not found") };
-      case (?request) {
-        // Verify ownership: caller must be the submitter OR an admin
-        if (caller != request.submittedBy and not Auth.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Unauthorized: Can only check status of your own request");
-        };
-        request.status;
-      };
+      case (?request) { request.status };
     };
   };
 
