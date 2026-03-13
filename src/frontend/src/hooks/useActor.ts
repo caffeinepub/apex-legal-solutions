@@ -25,7 +25,6 @@ export function useActor() {
       };
 
       const actor = await createActorWithConfig(actorOptions);
-      // First login automatically becomes admin - no token required
       await actor._initializeAccessControl();
       return actor;
     },

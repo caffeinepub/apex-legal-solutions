@@ -2,8 +2,8 @@ import AccessControl "./access-control";
 import Runtime "mo:core/Runtime";
 
 mixin (accessControlState : AccessControl.AccessControlState) {
-  // Initialize auth - first caller automatically becomes admin, no token required.
-  public shared ({ caller }) func _initializeAccessControl() : async () {
+  // First caller to invoke this becomes admin automatically. No token needed.
+  public shared ({ caller }) func _initializeAccessControlWithSecret(_userSecret : Text) : async () {
     AccessControl.initialize(accessControlState, caller);
   };
 
@@ -12,7 +12,6 @@ mixin (accessControlState : AccessControl.AccessControlState) {
   };
 
   public shared ({ caller }) func assignCallerUserRole(user : Principal, role : AccessControl.UserRole) : async () {
-    // Admin-only check happens inside
     AccessControl.assignRole(accessControlState, caller, user, role);
   };
 

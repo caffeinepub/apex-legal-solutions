@@ -21,12 +21,11 @@ module {
     };
   };
 
-  // First non-anonymous principal that calls this function becomes admin automatically.
-  // No token required.
+  // First non-anonymous principal to call this becomes admin automatically.
   public func initialize(state : AccessControlState, caller : Principal) {
     if (caller.isAnonymous()) { return };
     switch (state.userRoles.get(caller)) {
-      case (?_) {};
+      case (?_) {}; // Already registered, do nothing
       case (null) {
         if (not state.adminAssigned) {
           state.userRoles.add(caller, #admin);
