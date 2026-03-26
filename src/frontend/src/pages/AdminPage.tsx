@@ -7,6 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -23,19 +25,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, LogIn, LogOut, RefreshCw, ShieldAlert } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  KeyRound,
+  Loader2,
+  LogOut,
+  RefreshCw,
+  ShieldAlert,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { ConsultationRequest } from "../backend";
-import { useInternetIdentity } from "../hooks/useInternetIdentity";
-import {
-  CaseType,
-  ConsultationStatus,
-  useGetAllRequests,
-  useIsAdmin,
-  useUpdateRequestStatus,
-} from "../hooks/useQueries";
+import { useActor } from "../hooks/useActor";
+import { CaseType, ConsultationStatus } from "../hooks/useQueries";
+
+const ADMIN_PIN = "ApexAdmin2024";
 
 const CASE_TYPE_LABELS: Record<CaseType, string> = {
   [CaseType.civilLitigation]: "Civil Litigation",
@@ -68,26 +73,47 @@ const STATUS_BADGE: Record<
 
 function formatDate(ts: bigint) {
   try {
-    // Motoko Time is nanoseconds
     return new Date(Number(ts / 1_000_000n)).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
     });
   } catch {
-    return "—";
+    return "\u2014";
   }
 }
 
-function LoginScreen() {
-  const { login, isLoggingIn } = useInternetIdentity();
+interface LoginScreenProps {
+  onLogin: (pin: string) => void;
+}
+
+function LoginScreen({ onLogin }: LoginScreenProps) {
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setTimeout(() => {
+      if (pin === ADMIN_PIN) {
+        onLogin(pin);
+      } else {
+        setError("Incorrect PIN. Please try again.");
+        setPin("");
+      }
+      setLoading(false);
+    }, 400);
+  };
+
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-background flex items-center justify-center py-20">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="text-center max-w-md px-4"
+        className="text-center max-w-md w-full px-4"
       >
         <div className="w-16 h-16 rounded-sm bg-gold/10 border border-gold/30 flex items-center justify-center mx-auto mb-6">
           <ShieldAlert className="w-8 h-8 text-gold" />
@@ -96,107 +122,121 @@ function LoginScreen() {
           Admin Portal
         </h1>
         <p className="text-muted-foreground mb-8">
-          Sign in with Internet Identity to access the administration dashboard
-          and manage consultation requests.
+          Enter your admin PIN to access the administration dashboard.
         </p>
-        <Button
-          onClick={login}
-          disabled={isLoggingIn}
-          data-ocid="admin.login.primary_button"
-          className="bg-gold text-primary-foreground hover:bg-gold-light font-semibold px-8 py-5 h-auto"
+
+        <form
+          onSubmit={handleSubmit}
+          className="bg-card border border-border rounded-sm p-6 text-left space-y-4"
         >
-          {isLoggingIn ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              Signing in...
-            </>
-          ) : (
-            <>
-              <LogIn className="w-4 h-4 mr-2" />
-              Sign In to Admin
-            </>
-          )}
-        </Button>
+          <div className="space-y-2">
+            <Label
+              htmlFor="admin-pin"
+              className="text-sm text-muted-foreground"
+            >
+              Admin PIN
+            </Label>
+            <div className="relative">
+              <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                id="admin-pin"
+                type="password"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                placeholder="Enter admin PIN"
+                autoComplete="current-password"
+                data-ocid="admin.pin.input"
+                className="pl-9 bg-secondary border-border focus:border-gold focus:ring-gold/20"
+              />
+            </div>
+            {error && (
+              <p
+                className="text-destructive text-sm"
+                data-ocid="admin.login.error_state"
+              >
+                {error}
+              </p>
+            )}
+          </div>
+          <Button
+            type="submit"
+            disabled={loading || !pin}
+            data-ocid="admin.login.primary_button"
+            className="w-full bg-gold text-primary-foreground hover:bg-gold-light font-semibold py-5 h-auto"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                Verifying...
+              </>
+            ) : (
+              "Login"
+            )}
+          </Button>
+        </form>
       </motion.div>
     </div>
   );
 }
 
-function NotAdminScreen() {
-  const { clear } = useInternetIdentity();
-  return (
-    <div className="min-h-[calc(100vh-4rem)] bg-background flex items-center justify-center py-20">
-      <div
-        className="text-center max-w-md px-4"
-        data-ocid="admin.access.error_state"
-      >
-        <div className="w-16 h-16 rounded-sm bg-destructive/10 border border-destructive/30 flex items-center justify-center mx-auto mb-6">
-          <ShieldAlert className="w-8 h-8 text-destructive" />
-        </div>
-        <h1 className="font-display text-3xl font-semibold text-foreground mb-3">
-          Access Denied
-        </h1>
-        <p className="text-muted-foreground mb-8">
-          Your account does not have administrator privileges. Please contact a
-          system administrator.
-        </p>
-        <Button
-          onClick={clear}
-          variant="outline"
-          data-ocid="admin.logout.secondary_button"
-          className="border-border text-muted-foreground hover:text-foreground"
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          Sign Out
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 export default function AdminPage() {
-  const { identity, isInitializing } = useInternetIdentity();
-  const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [pin, setPin] = useState("");
+
+  const { actor, isFetching } = useActor();
+
   const {
     data: requests,
     isLoading: reqLoading,
     refetch,
-  } = useGetAllRequests();
-  const updateStatus = useUpdateRequestStatus();
-  const { clear } = useInternetIdentity();
+  } = useQuery<ConsultationRequest[]>({
+    queryKey: ["allRequestsPin", pin],
+    queryFn: async () => {
+      if (!actor) return [];
+      try {
+        return await actor.getAllRequestsWithPin(pin);
+      } catch {
+        toast.error("Failed to load requests. Please re-login.");
+        setLoggedIn(false);
+        return [];
+      }
+    },
+    enabled: !!actor && !isFetching && loggedIn,
+  });
 
   const [selectedRequest, setSelectedRequest] =
     useState<ConsultationRequest | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  if (isInitializing || adminLoading) {
-    return (
-      <div
-        className="min-h-[calc(100vh-4rem)] bg-background flex items-center justify-center"
-        data-ocid="admin.loading_state"
-      >
-        <Loader2 className="w-8 h-8 animate-spin text-gold" />
-      </div>
-    );
-  }
+  const handleLogin = (enteredPin: string) => {
+    setPin(enteredPin);
+    setLoggedIn(true);
+  };
 
-  if (!identity) return <LoginScreen />;
-  if (!isAdmin) return <NotAdminScreen />;
+  const handleLogout = () => {
+    setLoggedIn(false);
+    setPin("");
+  };
 
   const handleUpdateStatus = async (id: string, status: ConsultationStatus) => {
+    if (!actor) return;
     setUpdatingId(id);
     try {
-      await updateStatus.mutateAsync({ id, status });
+      await actor.updateRequestStatusWithPin(id, status, pin);
       toast.success("Status updated successfully");
       if (selectedRequest?.id === id) {
         setSelectedRequest((prev) => (prev ? { ...prev, status } : prev));
       }
+      refetch();
     } catch {
-      toast.error("Failed to update status");
+      toast.error("Failed to update status. PIN may be invalid.");
+      setLoggedIn(false);
     } finally {
       setUpdatingId(null);
     }
   };
+
+  if (!loggedIn) return <LoginScreen onLogin={handleLogin} />;
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-background py-10">
@@ -236,7 +276,7 @@ export default function AdminPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={clear}
+              onClick={handleLogout}
               data-ocid="admin.logout.secondary_button"
               className="border-border text-muted-foreground hover:text-foreground"
             >

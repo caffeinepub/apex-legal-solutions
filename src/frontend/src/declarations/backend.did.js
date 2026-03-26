@@ -43,10 +43,16 @@ export const ConsultationRequest = IDL.Record({
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
 
 export const idlService = IDL.Service({
-  '_initializeAccessControl' : IDL.Func([], [], []),
+  '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'checkRequestStatus' : IDL.Func([IDL.Text], [ConsultationStatus], ['query']),
+  'claimFirstAdmin' : IDL.Func([], [IDL.Bool], []),
   'getAllRequests' : IDL.Func([], [IDL.Vec(ConsultationRequest)], ['query']),
+  'getAllRequestsWithPin' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(ConsultationRequest)],
+      ['query'],
+    ),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getUserProfile' : IDL.Func(
@@ -62,6 +68,11 @@ export const idlService = IDL.Service({
       [],
     ),
   'updateRequestStatus' : IDL.Func([IDL.Text, ConsultationStatus], [], []),
+  'updateRequestStatusWithPin' : IDL.Func(
+      [IDL.Text, ConsultationStatus, IDL.Text],
+      [],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -102,14 +113,20 @@ export const idlFactory = ({ IDL }) => {
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
   
   return IDL.Service({
-    '_initializeAccessControl' : IDL.Func([], [], []),
+    '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'checkRequestStatus' : IDL.Func(
         [IDL.Text],
         [ConsultationStatus],
         ['query'],
       ),
+    'claimFirstAdmin' : IDL.Func([], [IDL.Bool], []),
     'getAllRequests' : IDL.Func([], [IDL.Vec(ConsultationRequest)], ['query']),
+    'getAllRequestsWithPin' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(ConsultationRequest)],
+        ['query'],
+      ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getUserProfile' : IDL.Func(
@@ -125,6 +142,11 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'updateRequestStatus' : IDL.Func([IDL.Text, ConsultationStatus], [], []),
+    'updateRequestStatusWithPin' : IDL.Func(
+        [IDL.Text, ConsultationStatus, IDL.Text],
+        [],
+        [],
+      ),
   });
 };
 

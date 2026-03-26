@@ -168,7 +168,7 @@ export default function HomePage({ onOpenConsultation }: Props) {
             >
               Apex Legal Solutions provides expert legal representation across
               litigation and advisory services. Every client deserves access to
-              exceptional legal counsel — that's why your first consultation is
+              expert legal counsel — that's why your first consultation is
               always free.
             </motion.p>
 

@@ -38,10 +38,12 @@ export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
 export interface _SERVICE {
-  '_initializeAccessControl' : ActorMethod<[], undefined>,
+  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'checkRequestStatus' : ActorMethod<[string], ConsultationStatus>,
+  'claimFirstAdmin' : ActorMethod<[], boolean>,
   'getAllRequests' : ActorMethod<[], Array<ConsultationRequest>>,
+  'getAllRequestsWithPin' : ActorMethod<[string], Array<ConsultationRequest>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
@@ -52,6 +54,10 @@ export interface _SERVICE {
     string
   >,
   'updateRequestStatus' : ActorMethod<[string, ConsultationStatus], undefined>,
+  'updateRequestStatusWithPin' : ActorMethod<
+    [string, ConsultationStatus, string],
+    undefined
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

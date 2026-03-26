@@ -43,10 +43,11 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
-    _initializeAccessControl(): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     checkRequestStatus(id: string): Promise<ConsultationStatus>;
+    claimFirstAdmin(): Promise<boolean>;
     getAllRequests(): Promise<Array<ConsultationRequest>>;
+    getAllRequestsWithPin(pin: string): Promise<Array<ConsultationRequest>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
@@ -54,4 +55,5 @@ export interface backendInterface {
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     submitConsultationRequest(name: string, email: string, phone: string, caseType: CaseType, description: string): Promise<string>;
     updateRequestStatus(id: string, status: ConsultationStatus): Promise<void>;
+    updateRequestStatusWithPin(id: string, status: ConsultationStatus, pin: string): Promise<void>;
 }

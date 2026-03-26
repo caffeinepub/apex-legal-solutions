@@ -10,10 +10,15 @@ import Nat "mo:core/Nat";
 import Auth "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 
+
+
 actor {
   // Authorization
   let accessControlState = Auth.initState();
   include MixinAuthorization(accessControlState);
+
+  // Admin PIN for direct access (no Internet Identity required)
+  let ADMIN_PIN : Text = "ApexAdmin2024";
 
   // Data Types
   public type CaseType = {
@@ -60,6 +65,36 @@ actor {
   let userProfiles = Map.empty<Principal, UserProfile>();
   var nextRequestId : Nat = 0;
 
+  // Claim admin - the first logged-in user to call this becomes admin
+  public shared ({ caller }) func claimFirstAdmin() : async Bool {
+    if (caller.isAnonymous()) { return false };
+    if (accessControlState.adminAssigned) { return false };
+    accessControlState.userRoles.add(caller, #admin);
+    accessControlState.adminAssigned := true;
+    true;
+  };
+
+  // PIN-based admin functions - no Internet Identity required
+  public query func getAllRequestsWithPin(pin : Text) : async [ConsultationRequest] {
+    if (pin != ADMIN_PIN) {
+      Runtime.trap("Invalid admin PIN");
+    };
+    requests.values().toArray().sort();
+  };
+
+  public shared func updateRequestStatusWithPin(id : Text, status : ConsultationStatus, pin : Text) : async () {
+    if (pin != ADMIN_PIN) {
+      Runtime.trap("Invalid admin PIN");
+    };
+    switch (requests.get(id)) {
+      case (null) { Runtime.trap("Request not found") };
+      case (?request) {
+        let updatedRequest = { request with status };
+        requests.add(id, updatedRequest);
+      };
+    };
+  };
+
   // User Profile Functions (required by frontend)
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (Auth.hasPermission(accessControlState, caller, #user))) {
@@ -90,7 +125,6 @@ actor {
     caseType : CaseType,
     description : Text,
   ) : async Text {
-    // No authorization check - public users (including guests) can submit
     let id = nextRequestId.toText();
     nextRequestId += 1;
 
@@ -118,7 +152,7 @@ actor {
     };
   };
 
-  // Admin Functions
+  // Admin Functions (Internet Identity based)
   public shared ({ caller }) func updateRequestStatus(id : Text, status : ConsultationStatus) : async () {
     if (not Auth.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Only admins can perform this action");

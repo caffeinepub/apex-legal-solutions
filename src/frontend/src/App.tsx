@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { useState } from "react";
 import ConsultationModal from "./components/ConsultationModal";
+import DisclaimerGate from "./components/DisclaimerGate";
 import Footer from "./components/Footer";
 import Header from "./components/Header";
 import AdminPage from "./pages/AdminPage";
@@ -10,11 +11,15 @@ import StatusPage from "./pages/StatusPage";
 export type Page = "home" | "status" | "admin";
 
 export default function App() {
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
   const [currentPage, setCurrentPage] = useState<Page>("home");
   const [consultationOpen, setConsultationOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {!disclaimerAccepted && (
+        <DisclaimerGate onAccept={() => setDisclaimerAccepted(true)} />
+      )}
       <Header
         currentPage={currentPage}
         onNavigate={setCurrentPage}
